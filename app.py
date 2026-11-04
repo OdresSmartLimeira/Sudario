@@ -1,7 +1,7 @@
-import os, sqlite3, csv, io, secrets
+import os, sqlite3, csv, io, secrets, json, hashlib, hmac
 from datetime import datetime, date
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, Response, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS goals(id INTEGER PRIMARY KEY, user_id INTEGER REFEREN
 CREATE TABLE IF NOT EXISTS category_rates(category TEXT PRIMARY KEY, rate REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS quick_replies(id INTEGER PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL, owner_id INTEGER REFERENCES users(id));
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS orbitta_events(id INTEGER PRIMARY KEY, payload_hash TEXT UNIQUE NOT NULL, event_type TEXT, received_at TEXT NOT NULL, payload_json TEXT NOT NULL, processed INTEGER NOT NULL DEFAULT 0);
 '''
 
 def db():
@@ -312,6 +313,47 @@ def category_rate():
 @app.route('/settings')
 @admin_only
 def settings(): return render_template('settings.html')
+
+
+@app.route('/webhooks/orbitta', methods=['POST'])
+@csrf.exempt
+def orbitta_webhook():
+    """Receptor de teste: armazena eventos, mas NÃO altera dados do CRM."""
+    token = os.environ.get('ORBITTA_WEBHOOK_TOKEN', '')
+    if len(token) < 32:
+        return jsonify(error='Webhook não configurado'), 503
+    # A URL com token é um recurso provisório. Prefira assinatura HMAC
+    # documentada pelo provedor quando disponível.
+    supplied = request.args.get('token', '')
+    if not hmac.compare_digest(token, supplied):
+        return jsonify(error='Não autorizado'), 401
+    if request.content_length is not None and request.content_length > 256 * 1024:
+        return jsonify(error='Evento muito grande'), 413
+    raw = request.get_data(cache=False, as_text=False)
+    if len(raw) > 256 * 1024:
+        return jsonify(error='Evento muito grande'), 413
+    try:
+        payload = json.loads(raw)
+    except (ValueError, UnicodeDecodeError):
+        return jsonify(error='JSON inválido'), 400
+    if not isinstance(payload, (dict, list)):
+        return jsonify(error='JSON precisa ser objeto ou lista'), 400
+    event_type = ''
+    if isinstance(payload, dict):
+        event_type = str(payload.get('event') or payload.get('type') or payload.get('evento') or '')[:100]
+    digest = hashlib.sha256(raw).hexdigest()
+    with db() as con:
+        cursor = con.execute('INSERT OR IGNORE INTO orbitta_events(payload_hash,event_type,received_at,payload_json) VALUES(?,?,?,?)',
+                             (digest,event_type,now(),json.dumps(payload,ensure_ascii=False)))
+    return jsonify(ok=True, duplicate=cursor.rowcount == 0, stored=True, processed=False), 200
+
+@app.route('/admin/orbitta/events')
+@admin_only
+def orbitta_events():
+    # Somente metadados: não exibir conversas/dados pessoais em tela de diagnóstico.
+    with db() as con:
+        rows=con.execute('SELECT id,event_type,received_at,processed FROM orbitta_events ORDER BY id DESC LIMIT 30').fetchall()
+    return jsonify(events=[dict(row) for row in rows])
 
 @app.route('/health')
 def health(): return {'status':'ok'}
