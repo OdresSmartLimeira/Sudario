@@ -351,4 +351,4 @@ def sales():
         else:
             rows = con.execute('SELECT s.*,c.name AS client,u.name AS seller FROM sales s JOIN clients c ON c.id=s.client_id JOIN users u ON u.id=s.user_id WHERE s.user_id=? ORDER BY s.id DESC', (current_user.id,)).fetchall()
         rates = con.execute('SELECT * FROM category_rates').fetchall()
-    return render_template('sales.html', sales=rows, clients=c
+    return render_template('sales.html', sales=rows, clients=c)
