@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de Atendimento</title>
+<style>
+:root{--bg:#09090c;--panel:#101015;--panel2:#16161d;--line:#22222b;--tx:#e9e9f0;--mut:#8b8b99;--blue:#2f6bff;--blue2:#1b3a8f;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+*{box-sizing:border-box;margin:0}
+body{font:14px/1.4 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--tx);height:100dvh;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.hide{display:none!important}
+#login{height:100dvh;display:grid;place-items:center}
+#login form{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px;width:min(340px,92vw);display:grid;gap:12px}
+#login h1{font-size:20px}
+input,select{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.btn{background:var(--blue);border-radius:10px;padding:10px 16px;font-weight:600}
+.btn.ghost{background:var(--panel2);border:1px solid var(--line)}
+#app{display:grid;grid-template-columns:230px 1fr;height:100dvh}
+nav{background:var(--panel);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+nav .brand{font-weight:700;font-size:16px;padding:6px 10px 16px}
+nav .brand small{display:block;color:var(--mut);font-weight:400;font-size:12px}
+nav button{display:flex;gap:10px;align-items:center;text-align:left;padding:10px 12px;border-radius:10px;color:var(--mut)}
+nav button.on{background:#10224f;color:#6f9bff;box-shadow:inset 3px 0 0 var(--blue)}
+nav .sp{flex:1}
+main{overflow:hidden;display:flex;flex-direction:column;padding:16px;gap:12px;min-width:0}
+.head{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.head h2{font-size:18px}.head p{color:var(--mut);font-size:13px}
+.bar{display:flex;gap:8px;flex-wrap:wrap}
+.bar input{width:260px}.bar select{width:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:auto;flex:1;min-height:0}
+.row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.row:hover{background:#13131a}.row.sel{background:#121a33}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none}
+.grow{flex:1;min-width:0}
+.nm{font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sub{color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid;font-weight:600}
+.t-Triagem{color:#b084ff;border-color:#4a3380;background:#1a1230}
+.t-Follow-Up{color:#5b8cff;border-color:#1f3c85;background:#0e1a3d}
+.t-Convertido,.t-Confirmado{color:var(--ok);border-color:#14532d;background:#0a2415}
+.t-Perdido,.t-Cancelado{color:var(--bad);border-color:#7f1d1d;background:#2a0e0e}
+.t-Pendente{color:var(--warn);border-color:#78490a;background:#2a1c06}
+.time{color:var(--mut);font-size:12px}
+#chats{display:grid;grid-template-columns:360px 1fr;gap:12px;flex:1;min-height:0}
+#chats .card{display:flex;flex-direction:column}
+#list{overflow:auto;flex:1}
+#pane{background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='6' fill='none' stroke='%23ffffff' stroke-opacity='.04'/%3E%3C/svg%3E")}
+.empty{margin:auto;color:var(--mut);text-align:center;padding:40px}
+.chead{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+#msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:6px}
+.b{max-width:min(520px,80%);padding:8px 12px;border-radius:14px;word-wrap:break-word;white-space:pre-wrap}
+.b.in{background:var(--panel2);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+.b.out{background:var(--blue);align-self:flex-end;border-bottom-right-radius:4px}
+.b .time{display:block;text-align:right;margin-top:2px;color:#ffffffa0}
+.b img{max-width:100%;border-radius:8px}
+audio{height:36px;max-width:100%}
+.warn{background:#2a1c06;color:var(--warn);padding:8px 16px;font-size:13px}
+.comp{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:var(--panel);align-items:center;position:relative}
+.comp input{flex:1}
+.ib{width:42px;height:42px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);font-size:18px;flex:none}
+.ib.rec{background:var(--bad);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.6}}
+#emo{position:absolute;bottom:64px;left:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;width:300px}
+#emo button{font-size:20px;padding:4px;border-radius:8px}#emo button:hover{background:var(--line)}
+.form{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)}
+.form>*{width:auto;flex:1;min-width:150px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bad);padding:10px 16px;border-radius:10px;z-index:9}
+.back{display:none}
+@media(max-width:820px){
+ #app{grid-template-columns:1fr;grid-template-rows:1fr 56px}
+ nav{order:2;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:4px;justify-content:space-around}
+ nav .brand,nav .sp{display:none}nav button{flex-direction:column;gap:0;font-size:11px;padding:6px 10px}
+ main{padding:8px}
+ #chats{grid-template-columns:1fr}
+ #chats.open #listcard{display:none}#chats:not(.open) #pane{display:none}
+ .back{display:block}.bar input{width:100%}
+}
+</style>
+</head>
+<body>
+<div id="login" class="hide">
+ <form id="lf"><h1>Painel de Atendimento</h1>
+  <input id="lu" placeholder="Usuário" autocomplete="username"><input id="lp" type="password" placeholder="Senha" autocomplete="current-password">
+  <button class="btn">Entrar</button></form>
+</div>
+
+<div id="app" class="hide">
+ <nav>
+  <div class="brand">Atendimento<small>WhatsApp Business</small></div>
+  <button data-v="chats">💬 Conversas</button>
+  <button data-v="leads">👤 Leads</button>
+  <button data-v="bookings">📅 Agendamentos</button>
+  <div class="sp"></div>
+  <button id="out">↩ Sair</button>
+ </nav>
+ <main id="main"></main>
+</div>
+<div id="toast" class="hide"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const COLORS = ['#a855f7', '#ef4444', '#3b82f6', '#06b6d4', '#22c55e', '#f59e0b', '#ec4899'];
+let T = localStorage.t, view = 'chats', cur = null, convs = [], last = '', rec = null;
+
+const initials = (c) => (c.name || c.phone).replace(/\W/g, '').slice(0, 2).toUpperCase();
+const color = (c) => COLORS[c.id % COLORS.length];
+const nameOf = (c) => c.name || fmtPhone(c.phone);
+const fmtPhone = (p) => p.startsWith('55') && p.length >= 12 ? `+55 (${p.slice(2, 4)}) ${p.slice(4, -4)}-${p.slice(-4)}` : '+' + p;
+const hm = (d) => new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const dt = (d) => new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+const avatar = (c) => `<div class="av" style="background:${color(c)}">${esc(initials(c))}</div>`;
+
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.remove('hide'); setTimeout(() => t.classList.add('hide'), 3500); }
+async function api(p, o = {}) {
+  const r = await fetch('/api' + p, { ...o, headers: { Authorization: 'Bearer ' + T, ...(o.headers || {}) } });
+  if (r.status === 401) { logout(); throw new Error('Sessão expirada'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Erro');
+  return j;
+}
+const post = (p, body, method = 'POST') => api(p, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message); } };
+
+/* login */
+function logout() { localStorage.removeItem('t'); T = null; boot(); }
+$('#lf').onsubmit = guard(async (e) => {
+  e.preventDefault();
+  const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: $('#lu').value, pass: $('#lp').value }) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.error);
+  T = j.token; localStorage.t = T; boot();
+});
+$('#out').onclick = logout;
+document.querySelectorAll('nav [data-v]').forEach((b) => b.onclick = () => { view = b.dataset.v; render(); });
+
+function boot() {
+  $('#login').classList.toggle('hide', !!T); $('#app').classList.toggle('hide', !T);
+  if (T) render();
+}
+function render() {
+  document.querySelectorAll('nav [data-v]').forEach((b) => b.classList.toggle('on', b.dataset.v === view));
+  ({ chats: viewChats, leads: viewLeads, bookings: viewBookings })[view]();
+}
+
+/* ---------- Conversas ---------- */
+function viewChats() {
+  $('#main').innerHTML = `
+   <div id="chats" class="${cur ? 'open' : ''}">
+    <div class="card" id="listcard">
+      <div class="form"><input id="qs" placeholder="Pesquisar por nome ou telefone"><button class="btn ghost" id="newc" title="Nova conversa" style="flex:none;min-width:0">＋</button></div>
+      <div id="list"></div></div>
+    <div class="card" id="pane"></div>
+   </div>`;
+  $('#qs').oninput = guard(loadConvs);
+  $('#newc').onclick = guard(async () => {
+    const phone = prompt('Telefone com DDI e DDD (ex.: 5519999999999):'); if (!phone) return;
+    const c = await post('/contacts', { phone, name: prompt('Nome (opcional):') });
+    cur = c.id; last = ''; await loadConvs(true); openChat(c.id);
+  });
+  loadConvs(true).then(() => cur && openChat(cur));
+}
+async function loadConvs(force) {
+  const list = $('#list'); if (!list) return;
+  convs = await api('/conversations?q=' + encodeURIComponent($('#qs')?.value || ''));
+  const sig = JSON.stringify(convs) + cur;
+  if (!force && sig === last) return; last = sig;
+  list.innerHTML = convs.length ? convs.map((c) => `
+    <div class="row ${c.id === cur ? 'sel' : ''}" data-id="${c.id}" style="cursor:pointer">${avatar(c)}
+     <div class="grow"><div class="nm">${esc(nameOf(c))} <span class="tag t-${c.stage}">${esc(c.stage)}</span></div>
+     <div class="sub">${esc(c.last_text)}</div></div><div class="time">${hm(c.last_msg_at)}</div></div>`).join('')
+   : '<div class="empty">Nenhuma conversa ainda.<br>Mensagens recebidas no WhatsApp aparecem aqui.</div>';
+  list.querySelectorAll('.row').forEach((r) => r.onclick = () => openChat(+r.dataset.id));
+}
+async function openChat(id) {
+  cur = id; $('#chats').classList.add('open'); last = '';
+  const c = convs.find((x) => x.id === id) || (await api('/conversations')).find((x) => x.id === id);
+  if (!c) return;
+  const out24 = !c.last_inbound_at || Date.now() - new Date(c.last_inbound_at) > 864e5;
+  $('#pane').innerHTML = `
+   <div class="chead"><button class="back ib" id="bk">←</button>${avatar(c)}
+    <div class="grow"><div class="nm">${esc(nameOf(c))}</div><div class="sub">${fmtPhone(c.phone)}</div></div>
+    <select id="stg" style="width:auto">${['Triagem', 'Follow-Up', 'Convertido', 'Perdido'].map((s) => `<option ${s === c.stage ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+   ${out24 ? '<div class="warn">Fora da janela de 24h: o WhatsApp só permite mensagem livre até 24h após a última resposta do cliente.</div>' : ''}
+   <div id="msgs"></div>
+   <div class="comp"><div id="emo" class="hide"></div>
+    <button class="ib" id="eb" title="Emojis">😊</button>
+    <input id="mi" placeholder="Digite uma mensagem" autocomplete="off">
+    <button class="ib" id="mic" title="Gravar áudio">🎤</button>
+    <button class="btn" id="snd">Enviar</button></div>`;
+  $('#bk').onclick = () => { cur = null; $('#chats').classList.remove('open'); loadConvs(true); };
+  $('#stg').onchange = guard(async (e) => { await post('/contacts/' + id, { stage: e.target.value }, 'PATCH'); loadConvs(true); });
+  $('#emo').innerHTML = '😀😂😍🙏👍🔥🎉✅😉😊🤝💬📱📞💰❤️👏😎🤔😅🙌⭐🚀📅'.match(/\p{Extended_Pictographic}\uFE0F?/gu).map((e) => `<button>${e}</button>`).join('');
+  $('#emo').onclick = (e) => { if (e.target.tagName === 'BUTTON') { $('#mi').value += e.target.textContent; $('#mi').focus(); } };
+  $('#eb').onclick = () => $('#emo').classList.toggle('hide');
+  $('#mi').onkeydown = (e) => e.key === 'Enter' && $('#snd').click();
+  $('#snd').onclick = guard(async () => {
+    const v = $('#mi').value.trim(); if (!v) return; $('#mi').value = '';
+    await post(`/conversations/${id}/text`, { body: v }); loadMsgs(true); loadConvs();
+  });
+  $('#mic').onclick = guard(toggleRec);
+  loadConvs(true); loadMsgs(true);
+}
+let lastMsgs = '';
+async function loadMsgs(force) {
+  if (!cur || !$('#msgs')) return;
+  const ms = await api(`/conversations/${cur}/messages`);
+  const sig = JSON.stringify(ms); if (!force && sig === lastMsgs) return; lastMsgs = sig;
+  const box = $('#msgs'), bottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80 || force;
+  box.innerHTML = ms.map((m) => {
+    const media = m.type === 'audio' ? `<audio controls preload="none" src="/api/media/${m.media_id}?t=${T}"></audio>`
+      : m.type === 'image' ? `<img loading="lazy" src="/api/media/${m.media_id}?t=${T}">` : '';
+    const ticks = m.direction === 'out' ? (m.status === 'read' ? ' ✓✓' : m.status === 'delivered' ? ' ✓✓' : m.status === 'failed' ? ' ⚠' : ' ✓') : '';
+    return `<div class="b ${m.direction}">${media}${m.body ? esc(m.body) : ''}<span class="time">${hm(m.created_at)}${ticks}</span></div>`;
+  }).join('') || '<div class="empty">Sem mensagens.</div>';
+  if (bottom) box.scrollTop = box.scrollHeight;
+}
+async function toggleRec() {
+  const b = $('#mic');
+  if (rec) { rec.stop(); return; }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const mr = new MediaRecorder(stream), parts = []; const id = cur;
+  mr.ondataavailable = (e) => parts.push(e.data);
+  mr.onstop = guard(async () => {
+    stream.getTracks().forEach((t) => t.stop()); rec = null; b.classList.remove('rec'); b.textContent = '🎤';
+    if (!parts.length) return; b.disabled = true;
+    try { await api(`/conversations/${id}/audio`, { method: 'POST', headers: { 'Content-Type': mr.mimeType || 'audio/webm' }, body: new Blob(parts) }); }
+    finally { b.disabled = false; }
+    loadMsgs(true); loadConvs();
+  });
+  mr.start(); rec = mr; b.classList.add('rec'); b.textContent = '⏹';
+}
+
+/* ---------- Leads ---------- */
+async function viewLeads() {
+  $('#main').innerHTML = `
+   <div class="head"><div><h2>Leads</h2><p>Base de leads e interações</p></div>
+    <div class="bar"><input id="lq" placeholder="Buscar por nome ou telefone"><select id="ls"><option value="">Etapa: todas</option></select></div></div>
+   <div class="card" id="lc"></div>`;
+  const run = guard(async () => {
+    const { stages, leads } = await api(`/leads?q=${encodeURIComponent($('#lq').value)}&stage=${encodeURIComponent($('#ls').value)}`);
+    if ($('#ls').options.length === 1) stages.forEach((s) => $('#ls').add(new Option(s, s)));
+    $('#lc').innerHTML = `<div class="row time">${leads.length} leads</div>` + (leads.map((c) => `
+     <div class="row">${avatar(c)}<div class="grow"><div class="nm">${esc(nameOf(c))}</div><div class="sub">${fmtPhone(c.phone)}</div></div>
+      <select data-id="${c.id}" style="width:auto">${stages.map((s) => `<option ${s === c.stage ? 'selected' : ''}>${s}</option>`).join('')}</select>
+      <button class="btn ghost" data-open="${c.id}">Conversar</button></div>`).join('') || '<div class="empty">Nenhum lead encontrado.</div>');
+    $('#lc').querySelectorAll('select').forEach((s) => s.onchange = guard(() => post('/contacts/' + s.dataset.id, { stage: s.value }, 'PATCH')));
+    $('#lc').querySelectorAll('[data-open]').forEach((b) => b.onclick = () => { cur = +b.dataset.open; view = 'chats'; render(); });
+  });
+  $('#lq').oninput = run; $('#ls').onchange = run; run();
+}
+
+/* ---------- Agendamentos ---------- */
+async function viewBookings() {
+  const { leads } = await api('/leads');
+  $('#main').innerHTML = `
+   <div class="head"><div><h2>Agendamentos</h2><p>Acompanhe e gerencie os agendamentos</p></div></div>
+   <div class="card"><div class="form">
+     <select id="bc"><option value="">Escolha o contato</option>${leads.map((c) => `<option value="${c.id}">${esc(nameOf(c))}</option>`).join('')}</select>
+     <input id="bw" type="datetime-local"><input id="bn" placeholder="Observação"><button class="btn" id="ba" style="flex:none">Agendar</button></div>
+     <div id="bl"></div></div>`;
+  const run = guard(async () => {
+    const bs = await api('/bookings');
+    $('#bl').innerHTML = bs.map((b) => `
+     <div class="row"><div class="av" style="background:#10224f">📅</div>
+      <div class="grow"><div class="nm">${esc(b.name || fmtPhone(b.phone))} <span class="tag t-${b.status}">${b.status}</span></div><div class="sub">${esc(b.note || fmtPhone(b.phone))}</div></div>
+      <div class="time">${dt(b.when_at)}</div>
+      <select data-id="${b.id}" style="width:auto">${['Pendente', 'Confirmado', 'Cancelado'].map((s) => `<option ${s === b.status ? 'selected' : ''}>${s}</option>`).join('')}</select></div>`).join('')
+     || '<div class="empty">Nenhum agendamento ainda.</div>';
+    $('#bl').querySelectorAll('select').forEach((s) => s.onchange = guard(async () => { await post('/bookings/' + s.dataset.id, { status: s.value }, 'PATCH'); run(); }));
+  });
+  $('#ba').onclick = guard(async () => {
+    await post('/bookings', { contact_id: $('#bc').value, when_at: $('#bw').value && new Date($('#bw').value).toISOString(), note: $('#bn').value });
+    $('#bn').value = ''; run();
+  });
+  run();
+}
+
+/* atualização automática a cada 3s */
+setInterval(() => { if (!T || document.hidden) return; if (view === 'chats') guard(async () => { await loadConvs(); await loadMsgs(); })(); }, 3000);
+boot();
+</script>
+</body>
+</html>

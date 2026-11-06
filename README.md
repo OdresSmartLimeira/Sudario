@@ -1,58 +1,45 @@
-# Casa do Celular CRM — protótipo funcional (ambiente de testes)
+# Painel de Atendimento WhatsApp (estilo Orbitta)
 
-Aplicação Flask com SQLite para testar o fluxo administrativo de clientes, campanhas simuladas, conversas simuladas, funil de vendas, vendas, metas e comissões.
+Conversas, Leads e Agendamentos, com envio de **texto e áudio** pelo painel, usando a **API oficial da Meta (WhatsApp Cloud API)**.
+Stack: Node.js + Express + PostgreSQL. Hospedagem: Render.
 
-**Não envia nem recebe mensagens reais pelo WhatsApp.** Não implementa conexão por QR Code, agendador de envios, notificações em tempo real, anexos, pagamentos de comissões, limites efetivos de envio nem hospedagem automática. Os dados de clientes inseridos são persistidos localmente no SQLite; use somente dados fictícios nesta versão.
+## 1. Subir no GitHub e no Render
+1. Crie um repositório e envie estes arquivos (`git init`, `git add .`, `git commit`, `git push`).
+2. No Render: **New > Blueprint**, escolha o repositório. O `render.yaml` cria o serviço web e o PostgreSQL.
+3. Preencha as variáveis quando o Render pedir: `ADMIN_PASS` (senha do painel). `WA_TOKEN`, `WA_PHONE_ID` e `APP_SECRET` você preenche depois (passo 2).
+4. Anote a URL final, ex.: `https://whatsapp-crm.onrender.com`.
 
-## Rodar no computador
+> Plano gratuito do Render "dorme" e o banco gratuito expira em 30 dias. Para atendimento real use o plano pago (o `render.yaml` já usa Starter).
 
-1. Instale Python 3.11+.
-2. Copie `.env.example` para `.env` e defina `SECRET_KEY` (uma string aleatória longa), `ADMIN_EMAIL` e `ADMIN_PASSWORD` (12+ caracteres). Não publique `.env`.
-3. No terminal, dentro da pasta do projeto:
+## 2. Vincular o WhatsApp Business (API da Meta)
+1. Acesse developers.facebook.com > **Meus apps > Criar app** > tipo **Empresa** > adicione o produto **WhatsApp**.
+2. Em **WhatsApp > Configuração da API**:
+   - Clique em **Adicionar número de telefone** e informe o número da empresa. Ele será verificado por SMS/ligação.
+   - O número **não pode estar ativo no app WhatsApp comum** (ou Business app) nem em outra plataforma como a Orbitta. Ao migrar, a Orbitta deixa de receber as mensagens dele.
+   - Copie o **ID do número de telefone** -> variável `WA_PHONE_ID` no Render.
+3. **Token permanente** (o temporário expira em 24h): business.facebook.com > Configurações > **Usuários do sistema** > crie um usuário administrador > **Gerar token** com as permissões `whatsapp_business_messaging` e `whatsapp_business_management` -> variável `WA_TOKEN`.
+4. **Chave secreta do app** (Configurações do app > Básico > Chave secreta) -> variável `APP_SECRET` (valida que o webhook veio da Meta).
+5. **Webhook**: em WhatsApp > Configuração > Webhook, clique em Editar:
+   - URL de callback: `https://SEU-APP.onrender.com/webhook`
+   - Token de verificação: o valor da variável `WA_VERIFY_TOKEN` (o Render gerou; veja em Environment).
+   - Depois de verificar, assine o campo **messages**.
+6. Faça **Deploy** de novo no Render e mande uma mensagem para o número: ela aparece em **Conversas**.
 
-```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# Linux/macOS: source .venv/bin/activate
-pip install -r requirements.txt
-python app.py
+## 3. Regras do WhatsApp que você precisa saber
+- Você só pode enviar mensagem livre (texto/áudio) até **24h depois da última mensagem do cliente**. O painel avisa quando passou.
+- Para iniciar conversa ou fazer **disparos em massa** é preciso **modelo de mensagem (template) aprovado** pela Meta e clientes que aceitaram receber contato. É isso que evita bloqueio do número. A aba Campanhas é o próximo passo.
+- Áudios: o navegador grava em webm/mp4; o servidor converte para ogg/opus com ffmpeg (já incluso via `ffmpeg-static`) porque o WhatsApp só aceita esse formato como mensagem de voz.
+
+## 4. Rodar localmente
 ```
+npm install
+export DATABASE_URL=postgres://usuario:senha@localhost:5432/crm
+export ADMIN_PASS=minhasenha WA_TOKEN=... WA_PHONE_ID=...
+npm start   # http://localhost:3000
+```
+Para testar o webhook local use um túnel (ex.: ngrok) e coloque a URL dele no passo 2.5.
 
-4. Acesse `http://127.0.0.1:5000` e faça login com as credenciais definidas no `.env`.
-5. No menu **Usuários**, crie os três funcionários.
-
-Para gerar uma chave segura: `python -c "import secrets; print(secrets.token_hex(32))"`.
-
-## Arquivos e dados
-
-- `app.py`: rotas, permissões e banco de dados SQLite.
-- `templates/`: telas HTML.
-- `static/style.css`: visual do painel.
-- `requirements.txt`: dependências.
-- `.env.example`: variáveis de ambiente sem segredos.
-- `.gitignore`: impede commit acidental de `.env` e do banco SQLite.
-
-## Permissões e regras implementadas
-
-- Login com hash de senha e proteção CSRF.
-- Administrador pode visualizar clientes de todos e gerenciar usuários.
-- Funcionário acessa apenas clientes atribuídos e registra vendas próprias ou vinculadas aos clientes atribuídos.
-- Importação CSV/XLSX e distribuição automática/manual para funcionários.
-- Consentimento e descadastramento são registrados.
-- Campanhas são salvas **somente como simulação**; clientes sem autorização, descadastrados ou que responderam são excluídos da seleção.
-- Mensagens simuladas de entrada marcam o cliente como `replied`.
-- Comissão por categoria prevalece sobre taxa geral; valores são gravados no momento da venda.
-
-## Limitações antes de uso real
-
-Este é um MVP de demonstração, não pronto para produção. Antes de usar dados reais ou publicar na internet: adicionar testes automatizados, política de privacidade/LGPD, trilha de auditoria, recuperação de senha, autenticação multifator, proteção contra tentativas repetidas de login, HTTPS, backups, armazenamento persistente gerenciado, migrações de banco, controle de concorrência, regras de envio por horário e limite, gestão de cancelamentos, segurança de uploads e revisão de permissões. Para uso hospedado, preferir PostgreSQL em vez de SQLite e configurar `COOKIE_SECURE=1` sob HTTPS.
-
-A conexão não oficial ao WhatsApp Web via QR Code é uma proposta separada, não incluída; pode ser instável ou levar a restrições do número. Não há garantia de compatibilidade ou entrega.
-
-## Publicar no GitHub
-
-Crie um repositório privado e envie **somente os arquivos desta pasta**, sem `.env` ou `.db`. No GitHub: **Add file → Upload files**. Alternativamente, use Git local.
-
-## Hospedagem
-
-A aplicação pode ser executada por `gunicorn app:app`, com as variáveis de ambiente configuradas. **Não use SQLite em hospedagem gratuita com disco efêmero para dados importantes**: o banco pode desaparecer ao reiniciar. Não exponha esta versão diretamente à internet com informações reais de clientes.
+## 5. Estrutura
+- `server.js`: API, webhook, envio de texto/áudio, banco (tabelas criadas automaticamente).
+- `public/index.html`: painel (login, Conversas, Leads, Agendamentos).
+- `render.yaml`: configuração do Render.

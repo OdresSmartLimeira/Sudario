@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: whatsapp-crm
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: whatsapp-crm-db, property: connectionString }
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: WA_VERIFY_TOKEN
+        generateValue: true
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASS
+        sync: false
+      - key: WA_TOKEN
+        sync: false
+      - key: WA_PHONE_ID
+        sync: false
+      - key: APP_SECRET
+        sync: false
+databases:
+  - name: whatsapp-crm-db
+    plan: basic-256mb
